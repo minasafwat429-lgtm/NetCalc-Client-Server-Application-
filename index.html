@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obsidian | Network Core</title>
+    <style>
+        :root {
+            --bg-dark: #0f0f13;
+            --bg-panel: rgba(255, 255, 255, 0.05);
+            --accent: #7C3AED;
+            /* Violet Default */
+            --accent-glow: rgba(124, 58, 237, 0.4);
+            --text-main: #F3F4F6;
+            --text-muted: #9CA3AF;
+            --border: rgba(255, 255, 255, 0.1);
+            --font-main: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --success: #10B981;
+            --danger: #EF4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(124, 58, 237, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.15) 0%, transparent 40%);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* --- Glass Container --- */
+        .app-container {
+            width: 1000px;
+            height: 650px;
+            background: rgba(20, 20, 25, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.6);
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            overflow: hidden;
+            animation: appEntry 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes appEntry {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            background: rgba(0, 0, 0, 0.3);
+            border-right: 1px solid var(--border);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: white;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--accent), #3B82F6);
+            border-radius: 6px;
+        }
+
+        .nav-item {
+            padding: 14px 16px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: rgba(124, 58, 237, 0.1);
+            color: white;
+            border-color: rgba(124, 58, 237, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-icon {
+            opacity: 0.7;
+        }
+
+        .status-panel {
+            margin-top: auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        /* --- Content Area --- */
+        .content-wrapper {
+            position: relative;
+            padding: 40px 60px;
+            overflow-y: auto;
+        }
+
+        .view-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            margin-bottom: 50px;
+        }
+
+        /* --- Calculator Inputs --- */
+        .calc-container {
+            display: flex;
+            align-items: center;
+            /* Vertically center everything */
+            justify-content: space-between;
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            background: var(--bg-panel);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 30px var(--accent-glow);
+            transform: translateY(-2px);
+        }
+
+        .input-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 32px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* --- Operation Toggle --- */
+        .op-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .op-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg-panel);
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .op-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .op-btn.selected {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        /* --- Execute Button --- */
+        .action-btn {
+            width: 100%;
+            padding: 24px;
+            background: linear-gradient(135deg, var(--bg-panel), rgba(255, 255, 255, 0.02));
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: 0.5s;
+        }
+
+        .action-btn:hover {
+            border-color: var(--accent);
+            color: white;
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        .action-btn:hover::before {
+            transform: translateX(100%);
+        }
+
+        /* --- Result --- */
+        .result-box {
+            margin-top: 40px;
+            text-align: center;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+        }
+
+        .result-value {
+            font-size: 64px;
+            font-weight: 200;
+            color: white;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        /* --- History Lists --- */
+        .history-item {
+            background: var(--bg-panel);
+            margin-bottom: 15px;
+            padding: 20px;
+            border-radius: 16px;
+            border-left: 4px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .acc-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .color-ball {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .color-ball:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <div class="logo-icon"></div> OBSIDIAN
+            </div>
+
+            <div class="nav-item active" onclick="nav('dashboard', this)"><span>◆</span> Dashboard</div>
+            <div class="nav-item" onclick="nav('history', this)"><span>hz</span> History Logs</div>
+            <div class="nav-item" onclick="nav('settings', this)"><span>⚙</span> Settings</div>
+
+            <div class="status-panel">
+                <div style="font-size: 11px; font-weight: 700; color: #666; margin-bottom: 8px;">SYSTEM STATUS</div>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--success);">
+                    <div
+                        style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 10px var(--success);">
+                    </div>
+                    Online
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content-wrapper">
+
+            <!-- DASHBOARD VIEW -->
+            <div id="view-dashboard" class="view-section active">
+                <div class="header">
+                    <h1>Execution Core</h1>
+                    <p>Advanced Mathematical Computation Operations</p>
+                </div>
+
+                <div class="calc-container">
+                    <div class="input-wrapper">
+                        <div class="input-label">Variable Alpha</div>
+                        <input type="number" id="num1" placeholder="0">
+                    </div>
+
+                    <div class="op-selector">
+                        <div class="op-btn selected" onclick="setOp('ADD', this)">+</div>
+                        <div class="op-btn" onclick="setOp('SUB', this)">-</div>
+                        <div class="op-btn" onclick="setOp('MUL', this)">×</div>
+                        <div class="op-btn" onclick="setOp('DIV', this)">÷</div>
+                    </div>
+
+                    <div class="input-wrapper">
+                        <div class="input-label">Variable Beta</div>
+                        <input type="number" id="num2" placeholder="0">
+                    </div>
+                </div>
+
+                <button class="action-btn" onclick="calculate()">
+                    Run Sequence <span id="spinner" style="display:none">↻</span>
+                </button>
+
+                <div class="result-box">
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 2px;">
+                        OUTPUT</div>
+                    <div class="result-value" id="result">--</div>
+                </div>
+            </div>
+
+            <!-- HISTORY VIEW -->
+            <div id="view-history" class="view-section">
+                <div class="header">
+                    <h1>Audit Logs</h1>
+                    <p>Recent computational sequences.</p>
+                </div>
+                <div id="history-list">
+                    <div style="text-align: center; color: var(--text-muted); margin-top: 50px;">Nothing to show yet.
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS VIEW -->
+            <div id="view-settings" class="view-section">
+                <div class="header">
+                    <h1>Interface Config</h1>
+                    <p>Customize your visual workspace.</p>
+                </div>
+
+                <div
+                    style="background: var(--bg-panel); padding: 30px; border-radius: 20px; border: 1px solid var(--border);">
+                    <div style="font-size: 14px; font-weight: 600; margin-bottom: 15px;">ACCENT COLOR</div>
+                    <div class="acc-group">
+                        <div class="color-ball"
+                            style="background: #7C3AED; box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);"
+                            onclick="setColor('#7C3AED')"></div>
+                        <div class="color-ball"
+                            style="background: #3B82F6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);"
+                            onclick="setColor('#3B82F6')"></div>
+                        <div class="color-ball"
+                            style="background: #10B981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);"
+                            onclick="setColor('#10B981')"></div>
+                        <div class="color-ball"
+                            style="background: #EC4899; box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);"
+                            onclick="setColor('#EC4899')"></div>
+                        <div class="color-ball"
+                            style="background: #F59E0B; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);"
+                            onclick="setColor('#F59E0B')"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentOp = 'ADD';
+        let history = [];
+
+        // Navigation
+        function nav(viewId, el) {
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            el.classList.add('active');
+
+            document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+
+            if (viewId === 'history') updateHistoryUI();
+        }
+
+        // Operation Selection
+        function setOp(op, el) {
+            currentOp = op;
+            document.querySelectorAll('.op-btn').forEach(e => e.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+
+        // Color Theme
+        function setColor(hex) {
+            document.documentElement.style.setProperty('--accent', hex);
+            document.documentElement.style.setProperty('--accent-glow', hex + '66');
+        }
+
+        // Calculation Logic
+        function calculate() {
+            const n1 = parseFloat(document.getElementById('num1').value);
+            const n2 = parseFloat(document.getElementById('num2').value);
+            const resEl = document.getElementById('result');
+            const btn = document.querySelector('.action-btn');
+            const spi = document.getElementById('spinner');
+
+            // Loading UI
+            resEl.style.opacity = '0.5';
+            btn.style.opacity = '0.8';
+            spi.style.display = 'inline-block';
+
+            setTimeout(() => {
+                let res = 0;
+                let sym = '+';
+
+                if (isNaN(n1) || isNaN(n2)) {
+                    res = "ERR";
+                } else {
+                    switch (currentOp) {
+                        case 'ADD': res = n1 + n2; sym = '+'; break;
+                        case 'SUB': res = n1 - n2; sym = '-'; break;
+                        case 'MUL': res = n1 * n2; sym = '×'; break;
+                        case 'DIV': res = n2 !== 0 ? (n1 / n2).toFixed(2) : "∞"; sym = '÷'; break;
+                    }
+
+                    // Add to history
+                    if (res !== "ERR") {
+                        history.unshift({ n1, n2, sym, res });
+                    }
+                }
+
+                // Results UI
+                resEl.innerText = res;
+                resEl.style.opacity = '1';
+                btn.style.opacity = '1';
+                spi.style.display = 'none';
+
+            }, 600);
+        }
+
+        function updateHistoryUI() {
+            const list = document.getElementById('history-list');
+            if (history.length === 0) return;
+
+            list.innerHTML = "";
+            history.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `
+                <div>
+                    <span style="color:var(--text-muted); font-size:12px;">OPERATION</span><br>
+                    <span style="font-weight:bold; font-size:18px;">${item.n1} <span style="color:var(--accent)">${item.sym}</span> ${item.n2}</span>
+                </div>
+                <div style="font-size:24px; color:var(--text-main);">${item.res}</div>
+            `;
+                list.appendChild(div);
+            });
+        }
+    </script>
+
+</body>
+
+</html>
